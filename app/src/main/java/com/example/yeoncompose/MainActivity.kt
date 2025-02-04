@@ -25,7 +25,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,9 +41,11 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CodelabScreen() { // 앱의 메인 레이아웃
+fun CodelabScreen() {
+    val searchQuery = remember { mutableStateOf("") }
+
     Scaffold(
-        topBar = { SearchBar() },
+        topBar = { SearchBar(searchQuery) },
         bottomBar = { BottomNavigationBar() }
     ) { innerPadding ->
         val configuration = LocalConfiguration.current
@@ -55,17 +60,17 @@ fun CodelabScreen() { // 앱의 메인 레이아웃
             if (isLandscape) {
                 SideNavigationBar()
             }
-            MainContent(modifier = Modifier.weight(1f))
+            MainContent(modifier = Modifier.weight(1f), searchQuery.value)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchBar() { // 상단 검색창
+fun SearchBar(searchQuery: MutableState<String>) { // 상단 검색창
     TextField(
-        value = "",
-        onValueChange = {},
+        value = searchQuery.value,
+        onValueChange = { newText -> searchQuery.value = newText },
         placeholder = { Text("Search") },
         leadingIcon = { // 돋보기 아이콘 추가
             Icon(painter = painterResource(id = android.R.drawable.ic_menu_search), contentDescription = null)
@@ -77,12 +82,12 @@ fun SearchBar() { // 상단 검색창
     )
 }
 
-@Composable // 카테고리 & 컬렉션
-fun MainContent(modifier: Modifier = Modifier) {
+@Composable
+fun MainContent(modifier: Modifier = Modifier, searchQuery: String) {
     Column(modifier = modifier.padding(16.dp)) {
         Text("Align your Body", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
-        CategoryRow()
+        CategoryRow(searchQuery)
         Spacer(modifier = Modifier.height(16.dp))
         Text("Favorite Collections", fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
@@ -91,10 +96,13 @@ fun MainContent(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CategoryRow() { // 카테고리
+fun CategoryRow(searchQuery: String) {
     val categories = listOf("Inversions", "Quick yoga", "Stretching", "Tabata", "HIIT", "Pre-natal yoga")
+
+    val filteredCategories = categories.filter { it.contains(searchQuery, ignoreCase = true) }
+
     LazyRow {
-        items(categories) { category ->
+        items(filteredCategories) { category ->
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
                 Image(
                     painter = painterResource(id = android.R.drawable.ic_menu_gallery),
